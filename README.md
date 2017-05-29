@@ -1,3 +1,26 @@
+# Specifics of this fork
+
+This is a fork of https://github.com/caseyscarborough/keylogger
+
+I have made some modifications for my personal use. I'm putting them out here as maybe someone else might find the useful.
+
+The modifications are:
+
+* Drops root privileges when run with `sudo`.
+* Logs milliseconds since Epoch for each keystroke.
+* Adds newline after each log entry.
+
+Because of the design of OSX, to log keystrokes properly, `keylogger` needs to run with root privileges. I have solved this by using `sudo`. There's probably better ways that I'm not aware of.
+
+To use `sudo` without password for `keylogger` you need to add something similar to this to your `/etc/sudoers` file using `visudo`.
+
+```
+albin ALL=(root) NOPASSWD: /Users/albin/bin/keylogger`
+```
+
+> Note: You need to change the path of your logfile in `keylogger.h`.
+
+
 # Mac OS X Keylogger
 
 This repository holds the code for a simple and easy to use keylogger for Mac OS X. It is not meant to be malicious, and is written as a proof of concept. There is not a lot of information on keyloggers or implementing them on Mac OS X, and most of the ones I've seen do not work as indicated. This project aims to be a simple implementation on how it can be accomplished on OS X.

